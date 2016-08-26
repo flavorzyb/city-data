@@ -75,6 +75,8 @@ class Spider
 
         foreach ($dataArray as $v) {
             $data = [];
+            $index = strripos($v, '<ahref=');
+            $v = substr($v, $index);
             preg_match_all("<ahref='(.*)'>", $v, $data);
             if (isset($data[1]) && isset($data[1][0])) {
                 $href = $data[1][0];
@@ -95,3 +97,8 @@ class Spider
     }
 }
 
+set_time_limit(-1);
+$outDir = __DIR__ . '/../out';
+$spider = new Spider();
+$spider->setOutDir($outDir);
+$spider->load('http://www.stats.gov.cn/tjsj/tjbz/tjyqhdmhcxhfdm/2015/');
