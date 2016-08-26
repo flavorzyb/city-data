@@ -57,10 +57,9 @@ class Spider
                 curl_close($ch);
                 return trim($result);
             }
+            curl_close($ch);
             $times ++;
         } while($times < 5);
-
-        curl_close($ch);
 
         return '';
     }
