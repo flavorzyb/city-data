@@ -37,7 +37,6 @@ class Spider
     }
 
     private function download($url) {
-
         $times = 0;
         do {
             $ch   = curl_init();
@@ -54,14 +53,16 @@ class Spider
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
             $result = curl_exec($ch);
-            curl_close($ch);
             if (!curl_errno($ch)) {
-                break;
+                curl_close($ch);
+                return trim($result);
             }
             $times ++;
         } while($times < 5);
 
-        return trim($result);
+        curl_close($ch);
+
+        return '';
     }
 
     public function load($url)
