@@ -2,8 +2,6 @@
 class Spider
 {
     private $outDir = '';
-    private $urlArray = [];
-    private $urlMapPath = '';
     /**
      * @param string $outDir
      */
@@ -18,22 +16,6 @@ class Spider
     public function getOutDir()
     {
         return $this->outDir;
-    }
-
-    /**
-     * @return string
-     */
-    public function getUrlMapPath()
-    {
-        return $this->urlMapPath;
-    }
-
-    /**
-     * @param string $urlMapPath
-     */
-    public function setUrlMapPath($urlMapPath)
-    {
-        $this->urlMapPath = $urlMapPath;
     }
 
     private function download($url) {
@@ -66,14 +48,20 @@ class Spider
 
     public function load($url)
     {
-        $this->loadMapData();
-        if (!isset($this->urlArray[$url])) {
+        $md5Str = md5($url);
+        $path =  $this->getOutDir() . '/' . substr($md5Str, 0, 2) . '/' . substr($md5Str, 2, 2);
+        $fullPath = $path . '/' . $md5Str;
+        if (!is_dir($path)) {
+            mkdir($path, 0777, true);
+        }
+
+        if (!is_file($fullPath)) {
             $content = $this->getContent($url);
-            if (strlen($content) > 50) {
-                $this->writeContent($url, $content);
+            if (strlen($content) > 100) {
+                file_put_contents($fullPath, $content);
             }
         } else {
-            $content = $this->loadContent($url);
+            $content = trim(file_get_contents($fullPath));
         }
 
         $content = str_ireplace(' ', '', $content);
@@ -104,36 +92,6 @@ class Spider
         $result = iconv('GBK', 'UTF-8//ignore', $result);
         $result = strtolower($result);
         return  $result;
-    }
-
-    private function writeContent($url, $content)
-    {
-        $md5Str = md5($url);
-        $this->urlArray[$url] = $md5Str;
-        file_put_contents($this->getUrlMapPath(), json_encode($this->urlArray));
-        $path =  $this->getOutDir() . '/' . substr($md5Str, 0, 2) . '/' . substr($md5Str, 2, 2);
-
-        if (!is_dir($path)) {
-            mkdir($path, 0777, true);
-        }
-
-        file_put_contents($path . '/' . $md5Str, $content);
-    }
-
-    private function loadContent($url)
-    {
-        $md5Str = $this->urlArray[$url];
-        $path =  $this->getOutDir() . '/' . substr($md5Str, 0, 2) . '/' . substr($md5Str, 2, 2) . '/' . $md5Str;
-        return trim(file_get_contents($path));
-    }
-
-    private function loadMapData()
-    {
-        clearstatcache();
-        if (is_file($this->getUrlMapPath())) {
-            $content = trim(file_get_contents($this->getUrlMapPath()));
-            $this->urlArray = json_decode($content, true);
-        }
     }
 }
 
