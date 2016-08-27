@@ -121,8 +121,34 @@ class Parser
             $this->out[$v] = [$key => $this->getCity($baseUrl . $k, [])];
             $cityArray = [];
             $cityArray = $this->formatCity($this->out[$v][$key], $cityArray, $key);
+            $cityArray = $this->fillTopChild($cityArray);
             $this->outCity($cityArray, $key);
         }
+    }
+
+    private function fillTopChild(array $dataArray)
+    {
+        $result = $dataArray;
+
+        $childMap = [];
+        $needCheckMap = [];
+        foreach ($dataArray as $k => $v) {
+            if (isset($v['child'])) {
+                foreach ($v['child'] as $child) {
+                    $childMap[$child] = $child;
+                }
+
+                $needCheckMap[$k] = $k;
+            }
+        }
+
+        foreach ($needCheckMap as $k) {
+            if (!isset($childMap[$k])) {
+                $result['child'][] = $k;
+            }
+        }
+
+        return $result;
     }
 
     private function outProvince(array $data)
@@ -145,7 +171,10 @@ class Parser
     {
         if (mb_substr($str, -3) == '办事处') {
             $str = mb_substr($str, 0, -3);
+        } elseif (mb_substr($str, -3) == '街道办') {
+            $str = mb_substr($str, 0, -1);
         }
+
         return $str;
     }
 
@@ -157,7 +186,7 @@ class Parser
                 if (empty($v)) {
                     $result[$k] = ['name' => $this->formatText($key)];
                 } else {
-                    if ((intval($k) != 0 ) && ('市辖区' != $key) && ('县' != $key)) {
+                    if ((intval($k) != 0) && ('市辖区' != $key) && ('县' != $key)) {
                         $result[$k] = ['name' => $this->formatText($key)];
                     }
 
@@ -165,6 +194,7 @@ class Parser
                     if (isset($result[$k])) {
                         $result[$k]['child'] = array_keys($child);
                     }
+
                     foreach ($child as $ck => $cv) {
                         $result[$ck] = $cv;
                     }
@@ -182,7 +212,7 @@ class Parser
             $result .= "'{$v}',";
         }
 
-        return '[' . substr($result, 0, -1) . '],';
+        return substr($result, 0, -1);
     }
 
     private function outCity(array $dataArray, $key)
@@ -193,14 +223,19 @@ class Parser
         fwrite($fp, "return  [\n");
         foreach ($dataArray as $k => $v) {
             $str = sprintf("        '%s'  => [\n", $k);
-            foreach ($v as $key => $vv) {
-                if (is_array($vv)) {
-                    $vv = $this->getChildString($vv);
-                } else {
-                    $vv = "'{$vv}',";
+            if ($k == 'child') {
+                $str .= "                " . $this->getChildString($v) . "\n";
+            } else {
+                foreach ($v as $key => $vv) {
+                    if (is_array($vv)) {
+                        $vv = '[' . $this->getChildString($vv) . '],';
+                    } else {
+                        $vv = "'{$vv}',";
+                    }
+                    $str .= sprintf("                '%s' => %s\n", $key, $vv);
                 }
-                $str .= sprintf("                '%s' => %s\n", $key, $vv);
             }
+
             $str .= sprintf("                  ],\n", $k);
             fwrite($fp, $str);
         }
