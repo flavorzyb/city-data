@@ -121,9 +121,45 @@ class Parser
             $this->out[$v] = [$key => $this->getCity($baseUrl . $k, [])];
             $cityArray = [];
             $cityArray = $this->formatCity($this->out[$v][$key], $cityArray, $key);
+            $cityArray = $this->rebuildCityChild($cityArray);
             $cityArray = $this->fillTopChild($cityArray);
             $this->outCity($cityArray, $key);
         }
+    }
+
+    private function rebuildCityChild(array $dataArray)
+    {
+        $childArray = [];
+        foreach ($dataArray as $k => $v) {
+            if (intval($k) > 0) {
+                if (isset($dataArray[$k]['child'])) {
+                    $childArray[$k] = $dataArray[$k]['child'];
+                }
+            }
+        }
+
+
+        foreach ($childArray as $k => $data) {
+            $result = [];
+            foreach ($data as $child) {
+                $result[$child] = $child;
+            }
+
+            foreach ($data as $child) {
+                if (isset($childArray[$child])) {
+                    $childList = $childArray[$child];
+                    foreach ($childList as $v) {
+                        if (isset($result[$v])) {
+                            unset($result[$v]);
+                        }
+                    }
+                }
+            }
+
+            $dataArray[$k]['child'] = array_keys($result);
+        }
+
+        return $dataArray;
     }
 
     private function fillTopChild(array $dataArray)
